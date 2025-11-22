@@ -2,20 +2,20 @@ import RPi.GPIO as GPIO
 from datetime import datetime
 from db import get_alerts_connection
 
-class CrashSensor:
+class PIRSensor:
     def __init__(self, pin):
         self.pin = pin
-        GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.pin, GPIO.IN)
 
-    def pressed(self):
-        return GPIO.input(self.pin) == GPIO.LOW
+    def motion_detected(self):
+        return GPIO.input(self.pin) == GPIO.HIGH
 
     def log_alert(self):
         conn = get_alerts_connection()
         cursor = conn.cursor()
 
         sql = "INSERT INTO Alerts (type, alert_time) VALUES (%s, %s)"
-        val = ("CRASH", datetime.now())
+        val = ("PIR", datetime.now())
 
         cursor.execute(sql, val)
         conn.commit()
