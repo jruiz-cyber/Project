@@ -1,23 +1,34 @@
-import RPi.GPIO as GPIO
+from gpiozero import MotionSensor
 from datetime import datetime
+import time
+
 from db import get_alerts_connection
 
+
 class PIRSensor:
+    # Initializes the PIR sensor using the GPIO pin.
+    # gpiozero handles Pi 5 compatibility internally.
     def __init__(self, pin):
-        self.pin = pin
-        GPIO.setup(self.pin, GPIO.IN)
+        self.sensor = MotionSensor(pin)
 
+    # Returns True if motion is detected.
     def motion_detected(self):
-        return GPIO.input(self.pin) == GPIO.HIGH
+        return self.sensor.motion_detected
 
-    def log_alert(self):
+    # Inserts a motion alert into the alerts database.
+    def upload_alert(self):
         conn = get_alerts_connection()
         cursor = conn.cursor()
 
-        sql = "INSERT INTO Alerts (type, alert_time) VALUES (%s, %s)"
-        val = ("PIR", datetime.now())
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        cursor.execute(sql, val)
+        cursor.execute(
+            "INSERT INTO Alerts (sensor_type, alert_time) VALUES (%s, %s)",
+            ("PIR", timestamp)
+        )
+
         conn.commit()
         cursor.close()
         conn.close()
+
+        print(f"[DB] PIR alert stored at {timestamp}")
