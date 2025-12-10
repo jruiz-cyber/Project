@@ -159,9 +159,9 @@ def handle_pir():
             time.sleep(2)
             buzzer.off()
 
-        # Motion is still happening, but I do not want spam
+        # Reduces Spam
         elif pir_state and pir_active:
-            # If I ever want updates every few seconds, I can use this
+            # Updates
             if current_time - last_pir_alert_time >= PIR_COOLDOWN:
                 
                 # Beep the buzzer for 1 second every 5 seconds
