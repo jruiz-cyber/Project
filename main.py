@@ -126,25 +126,63 @@ def record_motion_video():
 # =========================================================
 # PIR Event Handler
 # =========================================================
+# Cooldown for PIR alerts so they do not fire nonstop
+PIR_COOLDOWN = 5
+last_pir_alert_time = 0
+
+pir_active = False
+
 def handle_pir():
+    global last_pir_alert_time, pir_active
+
     while True:
-        if pir.motion_detected:
+        pir_state = pir.motion_detected
+        current_time = time.time()
+
+        # Motion just started here
+        if pir_state and not pir_active:
+            pir_active = True
+
             print("[PIR] Motion detected")
             buzzer.on()
-            upload_alert("PIR")
-            send_discord("🚨 PIR Motion Detected!")
 
+            # initial alert
+            upload_alert("PIR")
+            send_discord("🚨PIR Motion Detected!")
+
+            # Start recording only once instead of every loop
             Thread(target=record_motion_video, daemon=True).start()
+
+            # interval alerts
+            last_pir_alert_time = current_time
 
             time.sleep(2)
             buzzer.off()
+
+        # Motion is still happening, but I do not want spam
+        elif pir_state and pir_active:
+            # If I ever want updates every few seconds, I can use this
+            if current_time - last_pir_alert_time >= PIR_COOLDOWN:
+                
+                # Beep the buzzer for 1 second every 5 seconds
+                buzzer.on()
+                time.sleep(1)
+                buzzer.off()
+
+                send_discord("PIR still detecting motion...")
+                last_pir_alert_time = current_time
+        
+        # Motion ended, reset
+        elif not pir_state and pir_active:
+            pir_active = False
+
         time.sleep(0.1)
 
 
+
 # =========================================================
 # Crash Sensor Event Handler
 # =========================================================
-# Crash Sensor Event Handler
 last_crash_time = 0
 
 def handle_crash():
